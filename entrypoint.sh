@@ -1,17 +1,17 @@
 #!/usr/bin/env ash
 
-ZONE="$(hostname -s | grep -oP '^[a-z]+[0-9]+')"
-ZONE_GROUP="$(hostname -d | grep -oP '^[a-z0-9]+')"
-REALM="$(hostname -d | grep -oP '^[a-z0-9]+')"
-DOMAIN="$(hostname -d)"
+set -eux
+set -o pipefail
+
+ulimit -S 8096
+
 FSID="$(uuidgen)"
 MON_HOST="$(hostname -i)"
 MON_HOST_SHORT="$(hostname -s)"
 
-echo "ZONE: $ZONE"
-echo "ZONE_GROUP: $ZONE_GROUP"
-echo "REALM: $REALM"
-echo "DOMAIN: $DOMAIN"
+echo "ZONE: ${RGW_ZONE}"
+echo "ZONE_GROUP: ${RGW_ZONE_GROUP}"
+echo "DOMAIN: ${RGW_DOMAIN}"
 
 echo "Template ceph configuration..."
 export CEPH_GLOBAL_FSID="${FSID}"
@@ -26,11 +26,11 @@ ceph-authtool --create-keyring /etc/ceph/ceph.client.admin.keyring --gen-key -n 
 ceph-authtool /tmp/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
 
 echo "Create initial monitor map..."
-
 monmaptool --create --add "${MON_HOST_SHORT}" "${MON_HOST}" --fsid "${FSID}" --set-min-mon-release reef --enable-all-features --clobber /tmp/monmap
-
 mkdir -p "/var/lib/ceph/mon/ceph-${MON_HOST_SHORT}"
 rm -rf "/var/lib/ceph/mon/ceph-${MON_HOST_SHORT}/*"
+mkdir /var/run/ceph
+chown ceph:ceph /var/run/ceph
 
 echo "Setup Ceph Monitor..."
 ceph-mon --mkfs -i "${MON_HOST_SHORT}" --monmap /tmp/monmap --keyring /tmp/ceph.mon.keyring
@@ -53,7 +53,39 @@ chown -R ceph:ceph "/osd/osd.${OSD}/data"
 ceph-osd -i "${OSD}" --osd-data "/osd/osd.${OSD}/data" --keyring "/osd/osd.${OSD}/data/keyring"
 
 echo "Setup Ceph RGW..."
-mkdir -p "/var/lib/ceph/radosgw/ceph-rgw.${MON_HOST_SHORT}"
-ceph auth get-or-create "client.rgw.${MON_HOST_SHORT}" osd 'allow rwx' mon 'allow rw' -o "/var/lib/ceph/radosgw/ceph-rgw.${MON_HOST_SHORT}/keyring"
-touch "/var/lib/ceph/radosgw/ceph-rgw.${MON_HOST_SHORT}/done"
+mkdir -p "/var/lib/ceph/radosgw/ceph-rgw.${RGW_ID}"
+ceph auth get-or-create "client.rgw.${RGW_ID}" osd 'allow rwx' mon 'allow rw' -o "/var/lib/ceph/radosgw/ceph-rgw.${RGW_ID}/keyring"
+touch "/var/lib/ceph/radosgw/ceph-rgw.${RGW_ID}/done"
 chown -R ceph:ceph /var/lib/ceph/radosgw
+
+ceph config set global rgw_enable_usage_log true
+ceph config set global rgw_dns_name "${RGW_DOMAIN}"
+
+echo "Setup RGW Administator..."
+radosgw-admin user create --uid=".admin" --display-name="system admin" --system --key-type="s3" --access-key="${ACCESS_KEY}" --secret-key="${SECRET_KEY}"
+
+radosgw --cluster ceph --rgw-zone "${RGW_ZONE}" --name "client.rgw.${RGW_ID}" --setuser ceph --setgroup ceph
+
+echo "Setup Ceph Dashboard..."
+ceph mgr module enable dashboard --force
+ceph mgr module enable prometheus --force
+ceph mgr module enable diskprediction_local --force
+ceph mgr module enable stats --force
+ceph mgr module disable nfs
+ceph config set mgr mgr/dashboard/ssl false --force
+ceph dashboard feature disable rbd cephfs nfs iscsi mirroring
+echo "${DASHBOARD_PASSWORD}" | ceph dashboard ac-user-create "${DASHBOARD_USERNAME}" -i - administrator --force-password
+echo "${ACCESS_KEY}" | ceph dashboard set-rgw-api-access-key -i -
+echo "${SECRET_KEY}" | ceph dashboard set-rgw-api-secret-key -i -
+ceph dashboard set-rgw-api-ssl-verify False
+ceph dashboard motd set info 0 "Running local ceph-yocto container with in memory backend. Do not use in production."
+
+echo "Testing dashboard connectivity"
+curl -X 'POST' 'http://127.0.0.1:8080/api/auth' -H 'accept: application/vnd.ceph.api.v1.0+json' -H 'Content-Type: application/json' -d "{ \"username\": \"${DASHBOARD_USERNAME}\", \"password\": \"${DASHBOARD_PASSWORD}\"}"
+
+echo "Ceph is running..."
+while ! tail -F /var/log/ceph/ceph* ; do
+  sleep 0.1
+done
+
+echo "Terminating ceph..."
