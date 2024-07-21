@@ -28,8 +28,10 @@ DASHBOARD_USERNAME=yoctoadmin
 DASHBOARD_PASSWORD=yoctoadmin
 ```
 
-Additionally, you can configure the Ceph cluster by utilizing [Ceph-CFT](https://github.com/pr0ton11/ceph-cft)
+Additionally, you can configure the Ceph cluster by utilizing [ceph-cft](https://github.com/pr0ton11/ceph-cft)
+
 Example:
+
 ```
 CEPH_GLOBAL_LOG_FILE='/var/log/ceph/$cluster-$type.$id.log'
 CEPH_OSD_OP_QUEUE=wpq
