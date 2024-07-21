@@ -6,6 +6,19 @@ Ceph Yocto is a minimal build container for Ceph RGW (S3) services.
 * Configurable with environment variables (see configuration reference)
 * Does not need any persistent storage, privileged mode or host network mode
 
+## Usage
+
+To run the container attached, you can use the following command:
+
+```
+podman run -it -p 7480:7480 -p 8080:8080 ghcr.io/pr0ton11/ceph-yocto:latest
+```
+
+To run the container detached, you can use the following command:
+
+```
+podman run -d -p 7480:7480 -p 8080:8080 ghcr.io/pr0ton11/ceph-yocto:latest
+```
 
 ## Configuration Reference
 
@@ -28,7 +41,13 @@ DASHBOARD_USERNAME=yoctoadmin
 DASHBOARD_PASSWORD=yoctoadmin
 ```
 
-Additionally, you can configure the Ceph cluster by utilizing [ceph-cft](https://github.com/pr0ton11/ceph-cft)
+Example:
+
+```
+podman run -d -p 7480:7480 -p 8080:8080 -e SECRET_KEY=verysecret ghcr.io/pr0ton11/ceph-yocto:latest
+```
+
+Additionally, you can configure the ceph cluster (ceph.conf) by utilizing [ceph-cft](https://github.com/pr0ton11/ceph-cft)
 
 Example:
 

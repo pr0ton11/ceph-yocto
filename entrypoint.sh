@@ -3,6 +3,9 @@
 # set -eux
 # set -o pipefail
 
+echo "Ceph Yocto Container"
+echo "(v) 1.0.0"
+
 ulimit -S 8096
 
 FSID="$(uuidgen)"
@@ -17,7 +20,7 @@ echo "Template ceph configuration..."
 export CEPH_GLOBAL_FSID="${FSID}"
 export CEPH_GLOBAL_MON_HOST="${MON_HOST}"
 
-# Configure Ceph based on environment variables
+# Ceph Configuration
 ceph-cft
 
 echo "Create monitor credentials..."
@@ -80,12 +83,12 @@ echo "${SECRET_KEY}" | ceph dashboard set-rgw-api-secret-key -i -
 ceph dashboard set-rgw-api-ssl-verify False
 ceph dashboard motd set info 0 "Running local ceph-yocto container with in memory backend. Do not use in production."
 
-echo "Testing dashboard connectivity"
+echo "Validate Ceph Dashboard Access..."
 curl -X 'POST' 'http://127.0.0.1:8080/api/auth' -H 'accept: application/vnd.ceph.api.v1.0+json' -H 'Content-Type: application/json' -d "{ \"username\": \"${DASHBOARD_USERNAME}\", \"password\": \"${DASHBOARD_PASSWORD}\"}"
 
-echo "Ceph is running..."
+echo "Setup Log Output..."
 while ! tail -F /var/log/ceph/ceph* ; do
-  sleep 0.1
+  sleep 0.5
 done
 
 echo "Terminating ceph..."
