@@ -4,7 +4,7 @@ Ceph Yocto is a minimal build container for Ceph RGW (S3) services.
 
 * Built with Alpine Linux, uses packages from the Alpine repositories
 * Configurable with environment variables (see configuration reference)
-* Does not need any persistent storage, privileged mode, or host network mode
+* Does not need any persistent storage, privileged mode or host network mode
 
 
 ## Configuration Reference

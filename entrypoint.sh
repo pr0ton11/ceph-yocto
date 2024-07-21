@@ -1,7 +1,7 @@
 #!/usr/bin/env ash
 
-set -eux
-set -o pipefail
+# set -eux
+# set -o pipefail
 
 ulimit -S 8096
 
