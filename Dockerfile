@@ -5,7 +5,7 @@ RUN apk add --no-cache ca-certificates grep curl uuidgen ceph18 ceph18-radosgw c
 
 LABEL org.opencontainers.image.title=ceph-yocto
 LABEL org.opencontainers.image.description="A minimal development environment for Ceph"
-LABEL org.opencontainers.image.version=1.0.0
+LABEL org.opencontainers.image.version=v1.0.0
 LABEL org.opencontainers.image.licenses=Apache-2.0
 LABEL org.opencontainers.image.url=https://github.com/pr0ton11/ceph-yocto
 LABEL org.opencontainers.image.source=https://github.com/pr0ton11/ceph-yocto
