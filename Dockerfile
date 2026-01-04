@@ -1,7 +1,7 @@
 FROM ghcr.io/pr0ton11/ceph-cft:main as cft
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates grep curl uuidgen ceph18 ceph18-radosgw ceph18-mgr-dashboard
+RUN apk add --no-cache ca-certificates grep curl uuidgen ceph19 ceph19-radosgw ceph19-mgr-dashboard
 
 LABEL org.opencontainers.image.title=ceph-yocto
 LABEL org.opencontainers.image.description="A minimal development environment for Ceph"
